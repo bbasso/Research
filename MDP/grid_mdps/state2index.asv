@@ -1,0 +1,6 @@
+function index = state2index(state, sdim)
+
+% index = state(1) + sdim(1)*(state(2)-1) + sdim(1)*sdim(2)*(state(3)-1);
+
+% holy shit, matlab does this for me
+index = sub2ind(sdim,state(1),state(2),state(3));

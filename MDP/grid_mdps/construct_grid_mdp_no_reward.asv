@@ -1,0 +1,69 @@
+function [mdp] = construct_grid_mdp_no_reward(n, q, gamma_in)
+
+% generate an n by n grid MDP, with action failure probability q
+
+% State dimensions
+
+sdim(1) = 3; %task state:   {0 = unassigned, 1=assigned, 2=done}
+sdim(2) = 2; %task cost:    {0 = near, 1 = far}
+sdim(3) = n+1; %agent state:  {0 = unassigned, 1=assigned to task 1 ...}
+
+
+mdp.nS = sdim(1)^n * sdim(2)^n * sdim(3);
+mdp.nA = n+1; % {assign to task 1 ... assign to task n, deallocate}
+
+% transition model:
+for i=1:mdp.nA
+	mdp.P{i} = sparse(mdp.nS,mdp.nS);
+end
+
+% initial state distribution
+%bb: not sure what this is for in q learnign at least
+mdp.d = ones(mdp.nS,1)/(mdp.nS);
+
+
+for start_i=1:mdp.nS/2
+	for start_j=1:mdp.nS/2
+		start_idx = grid_ij2idx(start_i,start_j,mdp.nS/2);
+		result_i(2) = start_i;
+		result_j(2) = min(start_j+1,mdp.nS/2);
+		result_i(3) = min(start_i+1,mdp.nS/2);
+		result_j(3) = start_j;
+
+		for k=2:mdp.nA
+			result_idx(k) = grid_ij2idx(result_i(k),result_j(k),mdp.nS/2);
+		end
+
+		for k=2:mdp.nA
+			for l=2:mdp.nA
+				if(k==l)
+					inc_p = 1-q;
+				else
+					inc_p = q/3;
+				end
+				mdp.P{k}(start_idx, result_idx(l)) = mdp.P{k}(start_idx, result_idx(l)) + inc_p;
+			end
+		end
+
+	end
+end
+
+for s=1:length(mdp.P{1})
+	mdp.P{1}(s,s) = 1;
+end
+
+
+
+
+mdp.gamma = gamma_in;
+
+
+
+
+
+
+
+
+
+
+

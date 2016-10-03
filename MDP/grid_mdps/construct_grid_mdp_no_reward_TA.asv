@@ -1,0 +1,63 @@
+function [mdp] = construct_grid_mdp_no_reward_TA(m, c, q, gamma_in)
+
+% generate an n by n grid MDP, with action failure probability q
+
+
+% M: My State: {1,2, ... m, m+1} (allocated to task 1, allocated to task 2 ..., allocated to task m, unallocated)
+% C: Task Cost State: {1,2, ... c} (1=done)
+% A: Action space {1,2 ... m, m+1} allocate to task 1, allocate to task 2, deallocate
+
+% Encoding P(S'|S,A)
+% mdp.P{a}(s,s')
+% state2index(m, c1, c2) ie. (my state, cost of t1, cost of t2)
+
+mdp.nS = c^m * (m+1)    % number of states
+mdp.nA = m+1            % assign to task 1 ... assign to task n, deallocate
+pcloser = .75;          % probablity that I get closer to accomplishing task i
+
+% initial state distribution
+% bb: not sure what this is for in q learnign at least
+mdp.d = ones(mdp.nS,1)/(mdp.nS);
+
+for i=1:mdp.nA % loop over actions
+    mdp.P{i} = sparse(mdp.nS,mdp.nS);
+end
+
+%transition model:
+for i=1:mdp.nA % loop over actions
+    for j = 2:c %cost of T1
+        for k = 2:c %cost of T2
+            % commanding allocate/deallocate from a deallocated state
+            % results in that action deterministically...cost never changes
+            % while allocating deallocation (may want to change later)
+            mdp.P{i}(state2index([3,j,k]), state2index([i,j,k])) = 1;
+            
+            % with prob pcloser, I will reduce the cost of a task by i by
+            % staying assigned to it. wp 1-p the cost will stay the same
+            mdp.P{1}(state2index([1,j,k]), state2index([1,j-1,k])) = pcloser;
+            mdp.P{1}(state2index([1,j,k]), state2index([1,j,k])) = 1-pcloser;
+            mdp.P{2}(state2index([2,j,k]), state2index([2,j,k-1])) = pcloser;
+            mdp.P{2}(state2index([2,j,k]), state2index([2,j,k])) = 1-pcloser;
+            % for any action, if the tasks are done, i get deallocated,
+            % and tasks stay done.
+            mdp.P{i}(state2index([i,1,1]), state2index([3,1,1])) = 1;
+            % chance that i switch from task 'a' to 'b' if 'a' is done, any
+            % command
+            mdp.P{1}(state2index([2,j,1]), state2index([1,j,1])) = 1;
+            mdp.P{2}(state2index([1,1,k]), state2index([2,1,k])) = 1;
+        end
+    end
+end
+
+mdp.gamma = gamma_in;
+
+
+
+
+
+
+
+
+
+
+

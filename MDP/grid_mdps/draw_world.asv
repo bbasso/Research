@@ -1,0 +1,94 @@
+function [] = draw_world(state, params)
+
+% Valid state values
+% state.tasks.xxx.cost = {1,2,3}
+% state.tasks.xxx.state = {unassigned=1, assigned=2, done=3}
+% state.agents.yyy.state = {unallocated=1, allocated=2}
+% state.dist = {1,2,3}
+% state.dist =  Task |    Agent
+%                    | 1    2   ...  m
+%                   1| d11  d12      d1m
+%                   2| d21  d22
+%                   .|
+%                   .|
+%                   n| dn1  dn2      dnm
+% actions = {deallocate=1, allocate=2}
+% reward(state,action)
+
+
+
+
+subplot(4,4,[1 2 3 5 6 7 9 10 11 13 14 15], 'replace')
+hold on
+
+
+%axes('Color',[0.8392 0.9098 0.851])
+grid on
+xlim([-params.worldsize-1, params.worldsize+1]);
+ylim([-params.worldsize-1, params.worldsize+1]);
+plot(state.tasks.pos(1,1),state.tasks.pos(1,2),'r+','LineWidth',2,'MarkerSize',12)
+text(state.tasks.pos(1,1),state.tasks.pos(1,2),'Task 1   ','HorizontalAlignment','right','FontSize',12)
+
+plot(state.tasks.pos(2,1),state.tasks.pos(2,2),'r+','LineWidth',2,'MarkerSize',12)
+text(state.tasks.pos(2,1),state.tasks.pos(2,2),'Task 2   ','HorizontalAlignment','right','FontSize',12)
+
+plot(state.agent.pos(1,1),state.agent.pos(1,2),'kV','LineWidth',2,'MarkerSize',12)
+text(state.agent.pos(1,1),state.agent.pos(1,2),'Agent 1   ','HorizontalAlignment','right','FontSize',12)
+
+a = state.agent.state;
+if a ~= params.n+1
+    line([state.agent.pos(1),state.tasks.pos(a,1)],[state.agent.pos(2),state.tasks.pos(a,2)],...
+    'LineWidth',2,'LineStyle','--','Color','green');
+end
+if ~isempty(params.donetasks)
+    plot(state.tasks.pos(1,1),state.tasks.pos(1,2),'ro','LineWidth',2,'MarkerSize',12)
+end
+
+title('o-----World View-----o','FontSize',12)
+% plot(state.agent.pos(2,1),state.agent.pos(2,2),'gV','LineWidth',2,'MarkerSize',10)
+% text(state.agent.pos(2,1),state.agent.pos(2,2),'Agent 2   ','HorizontalAlignment','right','FontSize',12)
+%hold off
+
+% Agent State
+subplot(4,4,4)
+%hold on
+
+% xlim([0,params.n+1])
+occmap = zeros(1,params.n+1);
+occmap(1,state.agent.state)=1;
+imagesc(occmap)
+title('Agent State')
+xlabel('State')
+ylabel('Agent')
+set(gca, 'YTickLabelMode', 'Manual')
+set(gca, 'YTickLabel',[])
+colormap summer
+% hold off
+
+subplot(4,4,[8 12 16])
+%hold on
+
+h = barh(state.tasks.cost);
+title('Task Costs')
+xlabel('Cost')
+ylabel('Task')
+xlim([1,params.c])
+set(gca,'YTick',[1,2,3,4,5])
+k = 128;                % Number of colors in color table
+ch = get(h,'Children');
+fvd = get(ch,'Faces');
+fvcd = get(ch,'FaceVertexCData');
+[zs, izs] = sortrows(state.tasks.cost,1);
+colormap(summer(k));    % Expand the previous colormap
+shading interp          % Needed to graduate colors
+for i = 1:params.n
+    color = floor(k*i/params.n);       % Interpolate a color index
+    row = izs(i);               % Look up actual row # in data
+    fvcd(fvd(row,1)) = 1;       % Color base vertices 1st index
+    fvcd(fvd(row,4)) = 1;    
+    fvcd(fvd(row,2)) = color;   % Assign top vertices color
+    fvcd(fvd(row,3)) = color;
+end
+set(ch,'FaceVertexCData', fvcd);  % Apply the vertex coloring
+set(ch,'EdgeColor','k')           % Give bars black borders
+% hold off
